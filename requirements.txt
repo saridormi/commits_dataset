@@ -11,3 +11,4 @@ hydra-core==1.1.1
 black
 mypy
 pytest
+isort

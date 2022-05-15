@@ -1,8 +1,9 @@
-from typing import List, Iterable, Dict, Tuple
+from typing import Dict, Iterable, List, Tuple
+
 from pygments import lex
-from pygments.token import _TokenType, Text
+from pygments.lexers import TextLexer, guess_lexer_for_filename
+from pygments.token import Text, _TokenType
 from pygments.util import ClassNotFound
-from pygments.lexers import guess_lexer_for_filename, TextLexer
 
 
 class Lexer:
@@ -29,7 +30,7 @@ class Lexer:
             yield from ((Text, token) for token in diff.split())
 
     @staticmethod
-    def lex(cur_mods: List[Dict[str, str]], sep_token: str) -> str:
+    def lex(cur_mods: List[Dict[str, str]]) -> str:
         """
         This method iterates over all modifications in current commit and lexes each of them.
         """
@@ -55,7 +56,7 @@ class Lexer:
                 fname = mod["new_path"]
 
             mod_tokenized = Lexer._lex_single_file_diff(fname, mod["diff"])
-            tokens.extend((token.strip() for token in file_diff.split()))
-            tokens.extend((lexeme[1].strip() for lexeme in mod_tokenized if lexeme[1].strip()))
+            tokens.extend((token for token in file_diff.split()))
+            tokens.extend((lexeme[1] for lexeme in mod_tokenized if lexeme[1]))
 
-        return sep_token.join(tokens)
+        return " ".join(tokens)

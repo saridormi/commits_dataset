@@ -1,9 +1,10 @@
-import os
 import json
 import logging
-import pandas as pd
-from typing import List, Dict, Any
+import os
 from collections import defaultdict
+from typing import Any, Dict, List
+
+import pandas as pd
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
 from .diff_preprocessor import DiffPreprocessor
@@ -24,14 +25,12 @@ class TrainingProcessor:
         msg_tokenizer_name: str,
         diff_kwargs: Dict[str, Any],
         msg_kwargs: Dict[str, Any],
-        sep_token: str,
         **kwargs,
     ):
         self._diff_tok = PreTrainedTokenizerFast(tokenizer_file=diff_tokenizer_path)
         self._msg_tok = AutoTokenizer.from_pretrained(msg_tokenizer_name)
         self._diff_kwargs = diff_kwargs
         self._msg_kwargs = msg_kwargs
-        self._sep_token = sep_token
 
     def _tokenize_diffs(self, diffs: List[str]) -> List[List[int]]:
         return self._diff_tok(diffs, **self._diff_kwargs).input_ids
@@ -39,7 +38,7 @@ class TrainingProcessor:
     def _tokenize_messages(self, msgs: List[str]) -> List[List[int]]:
         return self._msg_tok(msgs, **self._msg_kwargs).input_ids
 
-    def __call__(self, in_fname: str, output_dir: str, part: str):
+    def __call__(self, in_fname: str, output_dir: str):
         """
         Expects following columns in input file:
         - "author"  - commit author
@@ -53,7 +52,7 @@ class TrainingProcessor:
         df["pos_in_history"] = df.groupby("author").cumcount()
 
         logging.info("Tokenizing diffs")
-        df["diff"] = [Lexer.lex(DiffPreprocessor.preprocess(diff), sep_token=self._sep_token) for diff in df["diff"]]
+        df["diff"] = [Lexer.lex(DiffPreprocessor.preprocess(diff)) for diff in df["diff"]]
         diff_input_ids = self._tokenize_diffs(df["diff"].tolist())
 
         logging.info("Tokenizing messages")
@@ -65,11 +64,11 @@ class TrainingProcessor:
             history[id].append(msg)
 
         logging.info("Saving history")
-        with open(os.path.join(output_dir, f"{part}_history.json"), "w") as outfile:
+        with open(os.path.join(output_dir, "mtests_history.json"), "w") as outfile:
             json.dump(history, outfile)
 
         logging.info("Saving data")
         df["diff_input_ids"] = diff_input_ids
         df[["diff_input_ids", "pos_in_history", "author"]].to_json(
-            os.path.join(output_dir, f"{part}.json"), lines=True, orient="records"
+            os.path.join(output_dir, "mtests.json"), lines=True, orient="records"
         )

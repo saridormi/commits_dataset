@@ -1,9 +1,11 @@
 import os
-import hydra
-from omegaconf import DictConfig
 from dataclasses import dataclass
+
+import hydra
 from hydra.core.config_store import ConfigStore
 from hydra.utils import to_absolute_path
+from omegaconf import DictConfig
+
 from src import TrainingProcessor
 
 
@@ -22,13 +24,11 @@ class MsgTokenizerConfig:
 
 @dataclass
 class ProcessingConfig:
-    input_path: str = "data/java_test.csv"
+    input_path: str = "data/marker_tests.csv"
     output_path: str = "processed"
-    part: str = "java"
 
     diff_tokenizer_path: str = "data/diff_tokenizer.json"
     msg_tokenizer_name: str = "distilgpt2"
-    sep_token: str = "月"
     diff_kwargs: DiffTokenizerConfig = DiffTokenizerConfig()
     msg_kwargs: MsgTokenizerConfig = MsgTokenizerConfig()
 
@@ -45,7 +45,7 @@ def main(cfg: DictConfig):
     os.makedirs(cfg.output_path, exist_ok=True)
 
     processor = TrainingProcessor(**cfg)
-    processor(in_fname=cfg.input_path, output_dir=cfg.output_path, part=cfg.part)
+    processor(in_fname=cfg.input_path, output_dir=cfg.output_path)
 
 
 if __name__ == "__main__":
